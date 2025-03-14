@@ -4,7 +4,6 @@
 # c program
 c/*
 c/*.o
-!c/**/
 !c/**/*.c
 !c/**/lib/
 !c/**/lib/*.a
