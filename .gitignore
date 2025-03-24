@@ -12,3 +12,6 @@ c/*.o
 
 #Java
 **/*.class
+#Scala
+scala/**/project
+scala/**/target
