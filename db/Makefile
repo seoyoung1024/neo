@@ -3,11 +3,11 @@ profile: /etc/profile
 	source ~/.bashrc
 start:
 	lsnrctl start
-stop:
+stop:	
 	lsnrctl stop
 status:
 	lsnrctl status
 	netstat -ntlp
 reinstall:
 	./reinstall.sh
-	
+
