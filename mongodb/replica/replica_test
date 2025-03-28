@@ -1,0 +1,7 @@
+rs.status()
+use test
+show tables
+db.things.insert({empno:1101, ename:"Rebert", dept:"Account"})
+show tables
+db.things.find()
+exit
