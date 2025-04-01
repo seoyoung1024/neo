@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,HTTPException 
 from fastapi.encoders import jsonable_encoder
 import requests
 import json
@@ -83,9 +83,6 @@ async def users_param(id: str):
         except ValueError:
             raise HTTPException(status_code=500, detail="Invalid JSON response from server")
 
-        if not data:
-            return {"message": "User not found", "data": None}
-        
         return data
     
     except requests.exceptions.RequestException:
@@ -93,10 +90,10 @@ async def users_param(id: str):
 
 
 @app.get(path="/put/{id}")
-async def putData(id: str, name: str):
+async def putData(id: str, name:str):
     url = base_url + '/' + id
-    data = dict(name=name)
-    response = requests.patch(url, json=data)
+    data = dict(id=id,name=name)
+    response = requests.put(url, json=data)
     return response.json()
 
 @app.get(path="/patch/{id}")
