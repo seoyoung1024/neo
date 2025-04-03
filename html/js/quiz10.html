@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프로토타입으로 Car 객체 만들기</title>
+    <script>
+        function Car(brand, grade, maxfuel, displacement, price){
+            this.brand = brand;
+            this.grade = grade;
+            this.maxfuel = maxfuel;
+            this.displacement = displacement;
+            this.price = price;
+
+            this.leftoverFuel = maxfuel;
+
+        this.info = function(brand1, grade1, maxfuel1, displacement1, price1){
+            document.write(`brand : ${brand} <br>`);
+            document.write(`grade : ${grade} <br>`);
+            document.write(`maxfuel : ${maxfuel} <br>`);
+            document.write(`displacement : ${displacement} <br>`);
+            document.write(`Price : ${price} <br>`);
+            document.write(`<hr/>`);
+            
+
+        }
+        this.drive = function(from, to, distance){
+            this.displacement += distance;
+            this.leftoverFuel -= distance;
+            document.write(`${brand}차량이 ${from}에서 ${to}까지 ${distance} km주행하셨습니다. <br>`);
+            document.write(`총 주행거리는 ${this.displacement}입니다. <br>`);
+            document.write(`잔여 연료량은 ${this.leftoverFuel}입니다. <br>`);
+            document.write(`<hr/>`);
+        }
+
+        this.refueling = function(amount){
+            this.leftoverFuel += amount;
+            document.write(`${amount}L 주유하여 잔여 연료량은 ${this.leftoverFuel}입니다.<br>`);
+            document.write(`<hr/>`);
+        }
+    }
+
+    </script>
+</head>
+<body>
+    <h3>프로토타입으로 Car 객체 만들기</h3>
+<hr/>
+<script>
+    let benz = new Car("Benz", "SUV", 900, 4000, 3000);
+    benz.info();
+    benz.drive("Seoul", "Busan", 400);
+    benz.drive("Busan", "Incheon", 460);
+    benz.refueling(860);
+
+    let bmw = new Car("BMW", "Sedan", 500, 2500, 2000);
+    bmw.info();
+    bmw.drive("Seoul", "Daejeon", 300);
+    bmw.refueling(200);
+    bmw.drive("Daejeon", "Seoul", 300);
+
+</script>
+</body>
+</html>

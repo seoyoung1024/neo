@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리터럴 표기법으로 Book 객체 만들기</title>
+    <script>
+        function Book(title, author, totalPage, category, price){
+            this.title = title;
+            this.author = author;
+            this.totalPage = totalPage;
+            this.category = category;
+            this.price = price;
+            this.leftover = totalPage;
+            this.rentalState = 1;
+            this.rentalUser = "";
+            this.rentalDay = 0;
+
+        this.reading = function(page){
+            this.leftove -= page;
+            return this.leftove;
+        }
+            this.rental = function(user, day){
+                this.rentalState = 0;
+                this.rentalUser = user;
+                this.rentalDay = day;
+                return this.rentalState;
+            }
+    }
+
+    </script>
+</head>
+<body>
+    <h3>Object Prototype으로 book 객체 만들기</h3>
+<hr/>
+<script>
+    let book = new Book("스며드는 리눅스", "문준현", 350, "IT", 30000);
+    document.write(`book : ${book} <br>`);
+    document.write(`Title : ${book.title} <br>`);
+    document.write(`Author : ${book.author} <br>`);
+    document.write(`Category : ${book.category} <br>`);
+    document.write(`Price : ${book.price} <br>`);
+    document.write(`Leftover : ${book.leftover} <br>`);
+    document.write(`Rental State : ${book.rentalState} <br>`);
+
+</script>
+</body>
+</html>

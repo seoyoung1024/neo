@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        
+let n = prompt("How much number input? :")
+let number = parseInt(n)
+let building = prompt("Input numbers (space-separated) :").split(" ").map(Number);
+let min = Math.min(...building);
+let sum = building.reduce((a, b) => a + b, 0);
+let result = sum - min * number;
+document.write(`building : ${building} <br>`);
+document.write(`min(building) : ${min} <br>`);
+document.write(`min(building) * n : ${min * number} <br>`);
+document.write(`sum(building) : ${sum} <br>`);
+document.write(`sum(building) - (min(building) * n) : ${result}`);
+
+
+    </script>
+</body>
+</html>

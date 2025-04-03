@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+ function isEven(number) {
+        if(number % 2 == 0){
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    </script>
+</head>
+<body>
+    <script>
+        let input = prompt("숫자를 입력하시오");
+        let number = parseInt(input);
+       let a = isEven(number);
+        if(a == 1){
+            document.write(`${number}은 짝수`);
+        } else {
+            document.write(`${number}은 홀수`);
+        }
+
+        </script>
+</body>
+</html>
