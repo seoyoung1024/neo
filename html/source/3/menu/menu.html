@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘저녁뭐?</title>
+    <style>
+        body {
+            background-color: rgb(242, 253, 234);
+        }
+    </style>
+</head>
+<body>
+    <h1>오저모?</h1>
+    <hr>
+    <div>오늘 저녁 뭐 먹지?</div>
+    data : 	<input type="date" value="2025-04-01">
+    time : 	<input type="time" value="19:30"><br>
+    <hr>
+    <form>
+    <input type="radio" value="1" name="r">중식 <select name="중식">
+            <option value="1">짜장면</option>
+            <option value="2" >짬뽕</option>
+            <option value="3">탕수육</option>
+        </select>
+        <input type="radio" value="2" name="r">
+        양식 <select name="양식">
+            <option value="1">파스타</option>
+            <option value="2" >뇨끼</option>
+            <option value="3">스테이크</option>
+        </select>
+        <input type="radio" value="3" name="r">
+        한식 <select name="한식">
+            <option value="1">비빔밥</option>
+            <option value="2" >불고기</option>
+            <option value="3">제육볶음</option>
+        </select>
+<hr>
+            <input type="radio" value="4" name="r">
+            <label for="pass">저거 말고? : </label>
+            <input id="pass" type="text" size="15" value="">
+            <input type="submit" value="완료">
+            <input type="submit" value="취소">
+        </form>
+</body>
+</html>

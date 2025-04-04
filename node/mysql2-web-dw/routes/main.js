@@ -67,7 +67,6 @@ app.get('/update', async (req, res) => {
         res.redirect('/select');
 })
 
-
     //delete data to st_info table
     app.get('/delete', (req, res) => {
         const st_id= req.query.st_id;
