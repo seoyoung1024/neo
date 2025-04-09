@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from python.dataProject.p07_var import value
+from python.pythonBasic.p07_var import value
 
 numbers = [0, 1, 2, 3]
 names = ['kim', 'Lee', 'Park', 'Choi']
