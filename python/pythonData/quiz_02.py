@@ -1,8 +1,7 @@
-
-import urllib.request
+import urllib.request #urllib는 인터넷에서 자료를 가져올 수 있는 파이썬 기본 라이브러리, request는 그 중에서 웹사이트에 요청을 보내서 데이터를 받아오는 역할
 from bs4 import BeautifulSoup
 import pandas as pd
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 
 plt.rcParams['font.family'] = 'NanumBarunGothic'
 
