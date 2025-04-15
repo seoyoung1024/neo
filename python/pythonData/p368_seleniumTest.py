@@ -16,7 +16,7 @@ word = 'selenium'
 search_textbook.send_keys(word)
 search_textbook.submit()
 
-wait = 10
+wait = 3
 print(str(wait) + ' seconds later...')
 time.sleep(wait)
 
