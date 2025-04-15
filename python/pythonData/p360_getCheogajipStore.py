@@ -2,7 +2,7 @@
 from itertools import count
 from p340_ChickenUtil import ChickenStore
 
-brandName = 'pelicana'
+brandName = 'cheogajip'
 base_url = 'https://www.cheogajip.co.kr/bbs/board.php'
 
 def getData():
@@ -42,7 +42,7 @@ def getData():
                 mydata = [brandName, store, sido, gungu, address, phone]
                 print(mydata)
                 savedData.append(mydata)
-                
+
 print(brandName + '매장 크롤링 시작')
 getData()
 print(brandName + '매장 크롤링 끝')
