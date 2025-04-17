@@ -1,18 +1,18 @@
-# .env
+## .env
 .env
 
-# c program
+## c program
 c/*
 c/*.o
 !c/**/*.c
-!c/**/lib/
-!c/**/lib/*.a
-!c/**/lib/*.h
+!c/**/*.h
+!c/**/*.a
 !c/**/Makefile*
 
 ## Java
 **/*.class
-#Scala
+
+## Scala
 scala/**/project
 scala/**/target
 
@@ -25,14 +25,15 @@ node/**/package-lock.json
 
 ## python
 .idea
+secret.json
 python/**/.venv
 python/**/__pycache__/
-**/secret.json
+**/ secret.json
 
 ## mongodb
 mongodb/backup
 
 ## oracle
 oracle/node/dbConfig.js
-oracle/node/node_modules
-oracle/node/package-lock.json
+oracle/**/node_modules
+oracle/**/package-lock.json
