@@ -159,12 +159,12 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
     pivot = df.pivot(index='연도', columns='주제분류', values='대출수').fillna(0)
     colors = ["#ff1919", "#ff9900", "#ffd700", "#1f77b4", "#2ca02c", "#9467bd"]
     label_color_map = {}
-    # 범례 라벨을 단순화: '문학 > 일본문학 > 소설' -> '일본문학'만 보이게
+    # 범례 라벨을 단순화: 항상 두 번째 장르만 보이게
     def simplify_label(label):
-        if '일본문학' in label:
-            return '일본문학'
-        # 필요시 추가 규칙 삽입 가능
-        return label.split('>')[-1].strip() if '>' in label else label
+        parts = [x.strip() for x in label.split('>')]
+        if len(parts) >= 2:
+            return parts[1]
+        return parts[-1]
     simplified_labels = {col: simplify_label(col) for col in pivot.columns}
 
     for idx, col in enumerate(pivot.columns):
