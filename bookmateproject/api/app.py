@@ -155,9 +155,17 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
     pivot = df.pivot(index='연도', columns='주제분류', values='대출수').fillna(0)
     colors = ["#ff1919", "#ff9900", "#ffd700", "#1f77b4", "#2ca02c", "#9467bd"]
     label_color_map = {}
+    # 범례 라벨을 단순화: '문학 > 일본문학 > 소설' -> '일본문학'만 보이게
+    def simplify_label(label):
+        if '일본문학' in label:
+            return '일본문학'
+        # 필요시 추가 규칙 삽입 가능
+        return label.split('>')[-1].strip() if '>' in label else label
+    simplified_labels = {col: simplify_label(col) for col in pivot.columns}
+
     for idx, col in enumerate(pivot.columns):
         label_color_map[col] = colors[idx % len(colors)]
-        plt.plot(pivot.index, pivot[col], label=col, color=label_color_map[col], linewidth=2)
+        plt.plot(pivot.index, pivot[col], label=simplified_labels[col], color=label_color_map[col], linewidth=2)
 
     plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), fontsize=14, frameon=False)
     plt.title(f"{start_year}~{end_year}년도의({ageGroup}세\n독서 성향 분석 결과", fontsize=18, pad=30)
