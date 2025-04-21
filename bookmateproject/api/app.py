@@ -74,7 +74,11 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
 
     # 캐싱: 이미지가 이미 있으면 바로 반환
     if os.path.exists(img_path):
-        image_url = img_path[img_path.find('/static/'):] if '/static/' in img_path else None
+        # image_url 생성 방식 수정: static/ 경로를 /static/으로 변환
+        if img_path.startswith("static/"):
+            image_url = "/" + img_path  # /static/...
+        else:
+            image_url = img_path[img_path.find('/static/'):] if '/static/' in img_path else None
         # 데이터는 새로 받아서 반환 (동일 파라미터면 결과도 동일)
         results = []
         from_age, to_age = get_age_range(ageGroup)
@@ -168,7 +172,7 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
         plt.plot(pivot.index, pivot[col], label=simplified_labels[col], color=label_color_map[col], linewidth=2)
 
     plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), fontsize=14, frameon=False)
-    plt.title(f"{start_year}~{end_year}년도의({ageGroup}세\n독서 성향 분석 결과", fontsize=18, pad=30)
+    plt.title(f"{start_year}~{end_year}년도의{ageGroup}세\n독서 성향 분석 결과", fontsize=18, pad=30)
     plt.xlabel("")
     plt.ylabel("대출 수", fontsize=14, labelpad=15)
     plt.xticks(pivot.index, fontsize=12)
@@ -182,7 +186,11 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
     ax.spines['top'].set_visible(False)
     plt.savefig(img_path, bbox_inches='tight')
     plt.close()
-    image_url = img_path[img_path.find('/static/'):] if '/static/' in img_path else None
+    # image_url 생성 방식 수정: static/ 경로를 /static/으로 변환
+    if img_path.startswith("static/"):
+        image_url = "/static/" + os.path.basename(img_path)
+    else:
+        image_url = img_path[img_path.find('/static/'):] if '/static/' in img_path else None
 
     # DataFrame을 JSON으로 반환
     df_json = df.to_dict(orient='records')
