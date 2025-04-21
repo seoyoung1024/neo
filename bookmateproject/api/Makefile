@@ -1,2 +1,2 @@
-api1:
-	uvicorn $@:loanItemSrchapi --host 0.0.0.0 --port 3000 --reload
+app:
+	uvicorn $@:app --host 0.0.0.0 --port 3000 --reload
