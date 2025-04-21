@@ -1,22 +1,44 @@
-import requests
+import requests, json
 from fastapi import FastAPI, HTTPException
 from datetime import datetime
+from fastapi.staticfiles import StaticFiles
+import matplotlib.pyplot as plt
+import os
+import pandas as pd
+import matplotlib
+import platform
+
+plt.rcParams['font.family'] = 'NanumBarunGothic'
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.relpath("./")))
+secret_file = os.path.join(BASE_DIR, 'secret.json')
+
+with open(secret_file) as f:
+    secrets = json.loads(f.read())
+
+def get_secret(setting, secrets=secrets):
+    try:
+        return secrets[setting]
+    except KeyError:
+        errorMsg = "Set the {} environment variable.".format(setting)
+        return errorMsg
 
 app = FastAPI()
+
+static_dir = "static"
+os.makedirs(static_dir, exist_ok=True)  # static 폴더가 없으면 생성
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 def extract_top_book_info(api_response: dict, year: int):
     docs = api_response.get('response', {}).get('docs', [])
     if not docs:
         return None
-
     sorted_docs = sorted(
         docs,
         key=lambda d: int(d['doc']['loan_count']),
         reverse=True
     )
-    
     top_doc = sorted_docs[0]['doc']
-    
     return {
         "year": year,
         "classNm": top_doc.get("class_nm", "Unknown"),
@@ -25,28 +47,21 @@ def extract_top_book_info(api_response: dict, year: int):
             "loanCount": int(top_doc.get("loan_count", 0))
         }
     }
+
 def get_age_range(age_group: int):
-    """
-    나이 그룹에 맞는 범위 계산
-    """
-    # 나이대 범위 설정
     age_ranges = {
         17: (17, 21),  # Z세대 후반
-        22: (22, 26),  # Z세대 중심
-        27: (27, 31),  # 밀레니얼 후반 / Z세대
-        32: (32, 36),  # 밀레니얼 중반
-        37: (37, 41),  # 밀레니얼 초반
+        22: (22, 26),  # MZ세대 초반
+        27: (27, 31),  # 밀레니얼 세대 중반
+        32: (32, 36),  # 밀레니얼 세대 후반
+        37: (37, 41),  # X세대 초반
     }
-    
-    # 기본값 
     return age_ranges.get(age_group, (17, 21))
-
-
 
 @app.get("/genre-change/")
 def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31', ageGroup: int = 17):
     external_api_url = 'https://data4library.kr/api/loanItemSrch'
-    auth_key = '815893da4d07574fea55156108fd8dd25ebefebf72d0badabf822811e76c0ab8'
+    api_key = get_secret("book_api_key")
 
     # 날짜를 datetime으로 변환
     try:
@@ -55,24 +70,62 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
     except ValueError:
         raise HTTPException(status_code=400, detail="날짜 형식은 YYYY-MM-DD 여야 합니다")
 
+    img_path = os.path.join(static_dir, f"trend_{ageGroup}_{startDt}_{endDt}.png")
+
+    # 캐싱: 이미지가 이미 있으면 바로 반환
+    if os.path.exists(img_path):
+        image_url = img_path[img_path.find('/static/'):] if '/static/' in img_path else None
+        # 데이터는 새로 받아서 반환 (동일 파라미터면 결과도 동일)
+        results = []
+        from_age, to_age = get_age_range(ageGroup)
+        for year in range(start_year, end_year + 1):
+            start = f"{year}-01-01"
+            end = f"{year}-12-31"
+            params = {
+                'authKey': api_key,
+                'startDt': start,
+                'endDt': end,
+                'from_age': str(from_age),
+                'to_age': str(to_age),
+                'format': 'json'
+            }
+            try:
+                res = requests.get(external_api_url, params=params)
+                res.raise_for_status()
+                api_data = res.json()
+                year_data = extract_top_book_info(api_data, year)
+                if year_data:
+                    results.append(year_data)
+            except Exception as e:
+                print(f"Error fetching data for {year}: {e}")
+        if not results:
+            raise HTTPException(status_code=404, detail="요청한 기간에 대한 데이터를 찾을 수 없습니다")
+        df = pd.DataFrame([{
+            '연도': item.get('year') or item.get('연도'),
+            '주제분류': item.get('classNm') or item.get('주제분류'),
+            '도서명': item.get('topBook', {}).get('title') if isinstance(item.get('topBook'), dict) else item.get('도서명'),
+            '대출수': item.get('topBook', {}).get('loanCount') if isinstance(item.get('topBook'), dict) else item.get('대출수'),
+        } for item in results])
+        df_json = df.to_dict(orient='records')
+        return {
+            "graphImageUrl": image_url,
+            "data": df_json
+        }
+
+    # (이하 기존대로 외부 API 호출 → results → df → 그래프 생성)
     results = []
-
-    # 나이대 범위 가져오기
     from_age, to_age = get_age_range(ageGroup)
-
     for year in range(start_year, end_year + 1):
         start = f"{year}-01-01"
         end = f"{year}-12-31"
-        
         params = {
-            'authKey': auth_key,
+            'authKey': api_key,
             'startDt': start,
             'endDt': end,
-            'from_age': str(from_age),  
-            'to_age': str(to_age),      
+            'from_age': str(from_age),
+            'to_age': str(to_age),
             'format': 'json'
         }
-
         try:
             res = requests.get(external_api_url, params=params)
             res.raise_for_status()
@@ -82,19 +135,51 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
                 results.append(year_data)
         except Exception as e:
             print(f"Error fetching data for {year}: {e}")
-
-        print(f"요청받은 ageGroup: {ageGroup}")
-        from_age, to_age = get_age_range(ageGroup)
-        print(f"조회할 나이 범위: {from_age} ~ {to_age}")
-
-
-        print(f"외부 API 응답 데이터: {api_data}")
         print(f"외부 API 요청 URL: {res.url}")
 
     if not results:
         raise HTTPException(status_code=404, detail="요청한 기간에 대한 데이터를 찾을 수 없습니다")
 
+    # DataFrame으로 바로 변환
+    df = pd.DataFrame([{
+        '연도': item.get('year') or item.get('연도'),
+        '주제분류': item.get('classNm') or item.get('주제분류'),
+        '도서명': item.get('topBook', {}).get('title') if isinstance(item.get('topBook'), dict) else item.get('도서명'),
+        '대출수': item.get('topBook', {}).get('loanCount') if isinstance(item.get('topBook'), dict) else item.get('대출수'),
+    } for item in results])
+
+    # 멀티라인 그래프 스타일 적용
+    plt.figure(figsize=(8, 6))
+
+    # 주제별 데이터 만들기
+    pivot = df.pivot(index='연도', columns='주제분류', values='대출수').fillna(0)
+    colors = ["#ff1919", "#ff9900", "#ffd700", "#1f77b4", "#2ca02c", "#9467bd"]
+    label_color_map = {}
+    for idx, col in enumerate(pivot.columns):
+        label_color_map[col] = colors[idx % len(colors)]
+        plt.plot(pivot.index, pivot[col], label=col, color=label_color_map[col], linewidth=2)
+
+    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), fontsize=14, frameon=False)
+    plt.title(f"{start_year}~{end_year}년도의({ageGroup}세\n독서 성향 분석 결과", fontsize=18, pad=30)
+    plt.xlabel("")
+    plt.ylabel("대출 수", fontsize=14, labelpad=15)
+    plt.xticks(pivot.index, fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.grid(axis='y', alpha=0.4)
+    plt.tight_layout(rect=[0, 0, 0.85, 1])  # 범례 공간 확보
+    ax = plt.gca()
+    ax.spines['left'].set_linewidth(2)
+    ax.spines['bottom'].set_linewidth(2)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    plt.savefig(img_path, bbox_inches='tight')
+    plt.close()
+    image_url = img_path[img_path.find('/static/'):] if '/static/' in img_path else None
+
+    # DataFrame을 JSON으로 반환
+    df_json = df.to_dict(orient='records')
+
     return {
-        "graphImageUrl": "https://yourdomain.com/static/trend_20to29.png",  # 실제 이미지 경로로 수정
-        "dataByYear": results
+        "graphImageUrl": image_url,
+        "data": df_json
     }
