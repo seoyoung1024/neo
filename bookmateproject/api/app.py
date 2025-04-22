@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import matplotlib
 import platform
+import pymysql
 
 plt.rcParams['font.family'] = 'NanumBarunGothic'
 
@@ -28,6 +29,51 @@ app = FastAPI()
 static_dir = "static"
 os.makedirs(static_dir, exist_ok=True)  # static 폴더가 없으면 생성
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# --- MySQL 연결/캐싱 함수 추가 ---
+def get_db_connection():
+    db_info = {
+        "host": get_secret("Mysql_Hostname"),
+        "user": get_secret("Mysql_User"),
+        "port": get_secret("Mysql_Port"),
+        "password": get_secret("Mysql_Password"),
+        "database": get_secret("Mysql_DBname"),
+        "charset": "utf8mb4",
+        "autocommit": True,
+        "cursorclass": pymysql.cursors.DictCursor
+    }
+    return pymysql.connect(**db_info)
+
+def get_cached_genre_analysis(age_group, start_year, end_year):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT result_json FROM genre_analysis
+                WHERE age_group=%s AND start_year=%s AND end_year=%s
+                ORDER BY created_at DESC LIMIT 1
+            """
+            cursor.execute(sql, (age_group, start_year, end_year))
+            row = cursor.fetchone()
+            if row:
+                return json.loads(row["result_json"])
+    finally:
+        conn.close()
+    return None
+
+def save_genre_analysis(age_group, start_year, end_year, result_json):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                INSERT INTO genre_analysis (age_group, start_year, end_year, result_json, created_at)
+                VALUES (%s, %s, %s, %s, NOW())
+            """
+            cursor.execute(sql, (
+                age_group, start_year, end_year, json.dumps(result_json, ensure_ascii=False)
+            ))
+    finally:
+        conn.close()
 
 def extract_top_book_info(api_response: dict, year: int):
     docs = api_response.get('response', {}).get('docs', [])
@@ -59,7 +105,7 @@ def get_age_range(age_group: int):
     return age_ranges.get(age_group, (17, 21))
 
 @app.get("/genre-change/")
-def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31', ageGroup: int = 17):
+def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt: str = '2025-03-31'):
     external_api_url = 'https://data4library.kr/api/loanItemSrch'
     api_key = get_secret("book_api_key")
 
@@ -73,6 +119,11 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
     img_path = os.path.join(static_dir, f"trend_{ageGroup}_{startDt}_{endDt}.png")
 
     # 캐싱: 이미지가 이미 있으면 바로 반환
+    cached = get_cached_genre_analysis(ageGroup, start_year, end_year)
+    if cached:
+        return cached
+
+    # 캐싱 확인
     if os.path.exists(img_path):
         # image_url 생성 방식 수정: static/ 경로를 /static/으로 변환
         if img_path.startswith("static/"):
@@ -111,10 +162,12 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
             '대출수': item.get('topBook', {}).get('loanCount') if isinstance(item.get('topBook'), dict) else item.get('대출수'),
         } for item in results])
         df_json = df.to_dict(orient='records')
-        return {
+        result_json = {
             "graphImageUrl": image_url,
             "data": df_json
         }
+        save_genre_analysis(ageGroup, start_year, end_year, result_json)
+        return result_json
 
     # (이하 기존대로 외부 API 호출 → results → df → 그래프 생성)
     results = []
@@ -195,7 +248,9 @@ def genre_change_analysis(startDt: str = '2024-01-01', endDt: str = '2025-03-31'
     # DataFrame을 JSON으로 반환
     df_json = df.to_dict(orient='records')
 
-    return {
+    result_json = {
         "graphImageUrl": image_url,
         "data": df_json
     }
+    save_genre_analysis(ageGroup, start_year, end_year, result_json)
+    return result_json
