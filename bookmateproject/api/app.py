@@ -26,6 +26,16 @@ def get_secret(setting, secrets=secrets):
 
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 또는 ["[http://192.168.1.21](http://192.168.1.21):8000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 static_dir = "static"
 os.makedirs(static_dir, exist_ok=True)  # static 폴더가 없으면 생성
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -254,3 +264,4 @@ def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt
     }
     save_genre_analysis(ageGroup, start_year, end_year, result_json)
     return result_json
+

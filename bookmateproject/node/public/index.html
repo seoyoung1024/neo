@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <form id="searchForm">
+        <input type="number" name="ageGroup" value="17">
+        <input type="date" name="startDt" value="2024-01-01">
+        <input type="date" name="endDt" value="2025-03-31">
+        <button type="submit">조회</button>
+      </form>
+      <div id="result"></div>
+      <script>
+      document.getElementById('searchForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const ageGroup = this.ageGroup.value;
+        const startDt = this.startDt.value;
+        const endDt = this.endDt.value;
+        // 서버의 실제 IP와 FastAPI 포트(3000)로 요청
+        const res = await fetch('http://192.168.1.21:3000/genre-change/?ageGroup=' + ageGroup + '&startDt=' + startDt + '&endDt=' + endDt);
+        const data = await res.json();
+        document.getElementById('result').innerHTML = JSON.stringify(data);
+      }
+      </script>
+    
+</body>
+</html>

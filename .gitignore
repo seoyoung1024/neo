@@ -37,3 +37,7 @@ mongodb/backup
 oracle/node/dbConfig.js
 oracle/**/node_modules
 oracle/**/package-lock.json
+
+## bookmateproject
+bookmateproject/node/**/node_modules
+bookmateproject/node/**/package-lock.json
