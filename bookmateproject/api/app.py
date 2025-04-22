@@ -2,14 +2,11 @@ import requests, json
 from fastapi import FastAPI, HTTPException
 from datetime import datetime
 from fastapi.staticfiles import StaticFiles
-import matplotlib.pyplot as plt
 import os
 import pandas as pd
-import matplotlib
 import platform
 import pymysql
-
-plt.rcParams['font.family'] = 'NanumBarunGothic'
+import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.relpath("./")))
 secret_file = os.path.join(BASE_DIR, 'secret.json')
@@ -110,32 +107,33 @@ def extract_top_book_info(api_response: dict, year: int):
     }
 
 def get_age_range(age_group: int):
-    if 17 <= age_group <= 21:
-        return (17, 21)
-    elif 22 <= age_group <= 26:
-        return (22, 26)
-    elif 27 <= age_group <= 31:
-        return (27, 31)
-    elif 32 <= age_group <= 36:
-        return (32, 36)
-    elif 37 <= age_group <= 41:
-        return (37, 41)
-    else:
-        return (17, 21)
+    age_ranges = {
+        17: (17, 21),  # Z세대 후반
+        22: (22, 26),  # Z세대 중심
+        27: (27, 31),  # 밀레니얼 후반 /Z세대 초입
+        32: (32, 36),  # 밀레니얼 중반
+        37: (37, 41),  # 밀레니얼 초반
+    }
+    return age_ranges.get(age_group, (17, 21))
 
 def get_age_label(age_group: int):
-    if 17 <= age_group <= 21:
-        return "Z세대 후반"
-    elif 22 <= age_group <= 26:
-        return "Z세대 중심"
-    elif 27 <= age_group <= 31:
-        return "밀레니얼 후반"
-    elif 32 <= age_group <= 36:
-        return "밀레니얼 중반"
-    elif 37 <= age_group <= 41:
-        return "밀레니얼 초반"
-    else:
-        return "Z세대 후반"
+    labels = {
+        17: "Z세대 후반",
+        22: "Z세대 중심",
+        27: "밀레니얼 후반",
+        32: "밀레니얼 중반",
+        37: "밀레니얼 초반"
+    }
+    return labels.get(age_group,"Z세대 후반")
+
+# --- 세대별 연도 리스트 딕셔너리 추가 ---
+AGE_GROUP_YEARS = {
+    17: [2015, 2020, 2025],
+    22: [2015, 2020, 2025],
+    27: [2010, 2015, 2025],
+    32: [2005, 2010, 2015, 2020, 2025],
+    37: [2000, 2005, 2010, 2015, 2020, 2025],
+}
 
 @app.get("/genre-change/")
 def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt: str = '2025-03-31'):
@@ -149,69 +147,22 @@ def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt
     except ValueError:
         raise HTTPException(status_code=400, detail="날짜 형식은 YYYY-MM-DD 여야 합니다")
 
-    img_path = os.path.join(static_dir, f"trend_{ageGroup}_{startDt}_{endDt}.png")
-
     # 캐싱 확인 (startDt, endDt를 캐시 키에 포함)
     cached = get_cached_genre_analysis(ageGroup, startDt, endDt)
     if cached:
         return cached
 
-    # 캐싱 확인
-    if os.path.exists(img_path):
-        # image_url 생성 방식 수정: static/ 경로를 /static/으로 변환
-        if img_path.startswith("static/"):
-            image_url = "/" + img_path  # /static/...
-        else:
-            image_url = img_path[img_path.find('/static/'):] if '/static/' in img_path else None
-        # 데이터는 새로 받아서 반환 (동일 파라미터면 결과도 동일)
-        results = []
-        from_age, to_age = get_age_range(ageGroup)
-        for year in range(start_year, end_year + 1):
-            start = f"{year}-01-01"
-            end = f"{year}-12-31"
-            params = {
-                'authKey': api_key,
-                'startDt': start,
-                'endDt': end,
-                'from_age': str(from_age),
-                'to_age': str(to_age),
-                'format': 'json'
-            }
-            try:
-                res = requests.get(external_api_url, params=params)
-                res.raise_for_status()
-                api_data = res.json()
-                year_data = extract_top_book_info(api_data, year)
-                if year_data:
-                    results.append(year_data)
-            except Exception as e:
-                print(f"Error fetching data for {year}: {e}")
-        if not results:
-            raise HTTPException(status_code=404, detail="요청한 기간에 대한 데이터를 찾을 수 없습니다")
-        df = pd.DataFrame([{
-            '연도': item.get('year') or item.get('연도'),
-            '주제분류': item.get('classNm') or item.get('주제분류'),
-            '도서명': item.get('topBook', {}).get('title') if isinstance(item.get('topBook'), dict) else item.get('도서명'),
-            '대출수': item.get('topBook', {}).get('loanCount') if isinstance(item.get('topBook'), dict) else item.get('대출수'),
-        } for item in results])
-        df_json = df.to_dict(orient='records')
-        result_json = {
-            "graphImageUrl": image_url,
-            "data": df_json
-        }
-        save_genre_analysis(ageGroup, startDt, endDt, start_year, end_year, result_json)
-        return result_json
-
-    # (이하 기존대로 외부 API 호출 → results → df → 그래프 생성)
+    # --- 연도 리스트를 AGE_GROUP_YEARS에서 직접 사용 ---
+    year_list = AGE_GROUP_YEARS.get(ageGroup, [])
     results = []
     from_age, to_age = get_age_range(ageGroup)
-    for year in range(start_year, end_year + 1):
-        start = f"{year}-01-01"
-        end = f"{year}-12-31"
+    for year in year_list:
+        startDt_year = f"{year}-01-01"
+        endDt_year = f"{year}-12-31"
         params = {
             'authKey': api_key,
-            'startDt': start,
-            'endDt': end,
+            'startDt': startDt_year,
+            'endDt': endDt_year,
             'from_age': str(from_age),
             'to_age': str(to_age),
             'format': 'json'
@@ -234,56 +185,35 @@ def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt
     df = pd.DataFrame([{
         '연도': item.get('year') or item.get('연도'),
         '주제분류': item.get('classNm') or item.get('주제분류'),
-        '도서명': item.get('topBook', {}).get('title') if isinstance(item.get('topBook'), dict) else item.get('도서명'),
         '대출수': item.get('topBook', {}).get('loanCount') if isinstance(item.get('topBook'), dict) else item.get('대출수'),
     } for item in results])
 
-    # 연령대 범위와 라벨을 ageGroup에서 동적으로 할당
-    print(f"DEBUG: ageGroup={ageGroup}")
-    from_age, to_age = get_age_range(ageGroup)
-    age_label = get_age_label(ageGroup)
-    print(f"DEBUG: age_label={age_label}, from_age={from_age}, to_age={to_age}")
-    # 멀티라인 그래프 스타일 적용
-    plt.figure(figsize=(8, 6))
-    pivot = df.pivot(index='연도', columns='주제분류', values='대출수').fillna(0)
+    # 모든 연도-장르 조합에 대해 0으로 채워서 pivot
+    years = sorted([int(y) for y in df['연도'].unique()])
+    genres = sorted(df['주제분류'].unique())
+    pivot = df.pivot(index='연도', columns='주제분류', values='대출수').reindex(index=years, columns=genres, fill_value=0)
+    datasets = []
     colors = ["#ff1919", "#ff9900", "#ffd700", "#1f77b4", "#2ca02c", "#9467bd"]
-    label_color_map = {}
-    def simplify_label(label):
-        parts = [x.strip() for x in label.split('>')]
-        if len(parts) >= 2:
-            return parts[1]
-        return parts[-1]
-    simplified_labels = {col: simplify_label(col) for col in pivot.columns}
-    for idx, col in enumerate(pivot.columns):
-        label_color_map[col] = colors[idx % len(colors)]
-        plt.plot(pivot.index, pivot[col], label=simplified_labels[col], color=label_color_map[col], linewidth=2)
-    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), fontsize=14, frameon=False)
-    plt.title(f"{start_year}~{end_year}년도의 {age_label}({from_age}~{to_age}세) 독서 성향 분석 결과", fontsize=18, pad=30)
-    plt.xlabel("")
-    plt.ylabel("대출 수", fontsize=14, labelpad=15)
-    plt.xticks(pivot.index, fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid(axis='y', alpha=0.4)
-    plt.tight_layout(rect=[0, 0, 0.85, 1])
-    ax = plt.gca()
-    ax.spines['left'].set_linewidth(2)
-    ax.spines['bottom'].set_linewidth(2)
-    ax.spines['top'].set_visible(False)
-    plt.savefig(img_path, bbox_inches='tight')
-    plt.close()
-    # image_url 생성 방식 수정: static/ 경로를 /static/으로 변환
-    if img_path.startswith("static/"):
-        image_url = "/static/" + os.path.basename(img_path)
-    else:
-        image_url = img_path[img_path.find('/static/'):] if '/static/' in img_path else None
-
-    # DataFrame을 JSON으로 반환
-    df_json = df.to_dict(orient='records')
-
-    result_json = {
-        "graphImageUrl": image_url,
-        "data": df_json
+    for idx, genre in enumerate(genres):
+        # NaN을 0으로 변환 후 int로 변환
+        data_list = [int(x) if not pd.isna(x) else 0 for x in pivot[genre].tolist()]
+        datasets.append({
+            'label': genre,
+            'data': data_list,
+            'backgroundColor': colors[idx % len(colors)]
+        })
+    chartjs_payload = {
+        'labels': year_list,
+        'datasets': datasets,
+        'topBooks': [
+            {
+                "year": int(item.get('year') or item.get('연도')) if (item.get('year') or item.get('연도')) else None,
+                "title": item.get('topBook', {}).get('title') if isinstance(item.get('topBook'), dict) else item.get('도서명'),
+                "loanCount": int(item.get('topBook', {}).get('loanCount') if isinstance(item.get('topBook'), dict) else item.get('대출수')) if (item.get('topBook', {}).get('loanCount') if isinstance(item.get('topBook'), dict) else item.get('대출수')) else 0,
+                "classNm": item.get('classNm') or item.get('주제분류'),
+            }
+            for item in results
+        ]
     }
-    # 캐시 저장
-    save_genre_analysis(ageGroup, startDt, endDt, start_year, end_year, result_json)
-    return result_json
+    save_genre_analysis(ageGroup, startDt, endDt, start_year, end_year, chartjs_payload)
+    return chartjs_payload

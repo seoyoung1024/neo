@@ -3,36 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Books For All</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400&display=swap" rel="stylesheet">
+    <link href="css/index.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
 </head>
 <body>
-
+    <div class="navbar">
+        <div class="nav-left">
+          <div class="logo">📚</div>
+          <div class="nav-menu">
+            <a href="#">Shop</a>
+            <a href="#">Blog</a>
+            <a href="#">About us</a>
+            <a href="#">Team</a>
+          </div>
+        </div>
+        <div class="nav-right">
+          <input class="search-box" type="text" placeholder="Search">
+          <button class="signup-btn">Sign up</button>
+        </div>
+      </div>
     <form id="searchForm">
-        <input type="number" name="ageGroup" value="17">
-        <input type="date" name="startDt" value="2024-01-01">
-        <input type="date" name="endDt" value="2025-03-31">
+        <label for="ageGroup">어떤 세대의 독서 성향을 확인할까요?</label>
+        <select name="ageGroup" id="ageGroup">
+            <option value="17">Z세대 후반 (17~21세)</option>
+            <option value="22">Z세대 중심 (22~26세)</option>
+            <option value="27">밀레니얼 후반 (27~31세)</option>
+            <option value="32">밀레니얼 중반 (32~36세)</option>
+            <option value="37">밀레니얼 초반 (37~41세)</option>
+        </select>
         <button type="submit">조회</button>
-      </form>
-      <div id="result"></div>
-      <div id="graph"></div>
-      <script>
-      document.getElementById('searchForm').onsubmit = async function(e) {
-        e.preventDefault();
-        const ageGroup = this.ageGroup.value;
-        const startDt = this.startDt.value;
-        const endDt = this.endDt.value;
-        // 서버의 실제 IP와 FastAPI 포트(3000)로 요청
-        const res = await fetch('http://192.168.1.21:3000/genre-change/?ageGroup=' + ageGroup + '&startDt=' + startDt + '&endDt=' + endDt);
-        const data = await res.json();
-        document.getElementById('result').innerHTML = JSON.stringify(data, null, 2);
-        // 그래프 이미지가 있으면 표시
-        if (data.graphImageUrl) {
-          document.getElementById('graph').innerHTML = `<img src='http://192.168.1.21:3000${data.graphImageUrl}' alt='분석 그래프' style='max-width:100%;border:1px solid #ccc;margin-top:10px;'>`;
-        } else {
-          document.getElementById('graph').innerHTML = '';
-        }
-      }
-      </script>
-    
+    </form>
+    <div id="graph-container" style="max-width: 500px; margin: 40px auto 0 auto; text-align:center;">
+      <canvas id="genreChart" width="1800" height="350"></canvas>
+    </div>
+    <div id="top-books"></div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="main.js"></script>
 </body>
 </html>
