@@ -54,16 +54,16 @@ def get_db_connection():
     }
     return pymysql.connect(**db_info)
 
-def get_cached_genre_analysis(age_group, start_year, end_year):
+def get_cached_genre_analysis(age_group, start_dt, end_dt):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
             sql = """
                 SELECT result_json FROM genre_analysis
-                WHERE age_group=%s AND start_year=%s AND end_year=%s
+                WHERE age_group=%s AND start_dt=%s AND end_dt=%s
                 ORDER BY created_at DESC LIMIT 1
             """
-            cursor.execute(sql, (age_group, start_year, end_year))
+            cursor.execute(sql, (age_group, start_dt, end_dt))
             row = cursor.fetchone()
             if row:
                 return json.loads(row["result_json"])
@@ -71,16 +71,21 @@ def get_cached_genre_analysis(age_group, start_year, end_year):
         conn.close()
     return None
 
-def save_genre_analysis(age_group, start_year, end_year, result_json):
+def save_genre_analysis(age_group, start_dt, end_dt, start_year, end_year, result_json):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
             sql = """
-                INSERT INTO genre_analysis (age_group, start_year, end_year, result_json, created_at)
-                VALUES (%s, %s, %s, %s, NOW())
+                INSERT INTO genre_analysis (age_group, start_dt, end_dt, start_year, end_year, result_json, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                ON DUPLICATE KEY UPDATE
+                    result_json=VALUES(result_json),
+                    created_at=NOW(),
+                    start_year=VALUES(start_year),
+                    end_year=VALUES(end_year)
             """
             cursor.execute(sql, (
-                age_group, start_year, end_year, json.dumps(result_json, ensure_ascii=False)
+                age_group, start_dt, end_dt, start_year, end_year, json.dumps(result_json, ensure_ascii=False)
             ))
     finally:
         conn.close()
@@ -105,14 +110,32 @@ def extract_top_book_info(api_response: dict, year: int):
     }
 
 def get_age_range(age_group: int):
-    age_ranges = {
-        17: (17, 21),  # Z세대 후반
-        22: (22, 26),  # MZ세대 초반
-        27: (27, 31),  # 밀레니얼 세대 중반
-        32: (32, 36),  # 밀레니얼 세대 후반
-        37: (37, 41),  # X세대 초반
-    }
-    return age_ranges.get(age_group, (17, 21))
+    if 17 <= age_group <= 21:
+        return (17, 21)
+    elif 22 <= age_group <= 26:
+        return (22, 26)
+    elif 27 <= age_group <= 31:
+        return (27, 31)
+    elif 32 <= age_group <= 36:
+        return (32, 36)
+    elif 37 <= age_group <= 41:
+        return (37, 41)
+    else:
+        return (17, 21)
+
+def get_age_label(age_group: int):
+    if 17 <= age_group <= 21:
+        return "Z세대 후반"
+    elif 22 <= age_group <= 26:
+        return "Z세대 중심"
+    elif 27 <= age_group <= 31:
+        return "밀레니얼 후반"
+    elif 32 <= age_group <= 36:
+        return "밀레니얼 중반"
+    elif 37 <= age_group <= 41:
+        return "밀레니얼 초반"
+    else:
+        return "Z세대 후반"
 
 @app.get("/genre-change/")
 def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt: str = '2025-03-31'):
@@ -128,8 +151,8 @@ def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt
 
     img_path = os.path.join(static_dir, f"trend_{ageGroup}_{startDt}_{endDt}.png")
 
-    # 캐싱: 이미지가 이미 있으면 바로 반환
-    cached = get_cached_genre_analysis(ageGroup, start_year, end_year)
+    # 캐싱 확인 (startDt, endDt를 캐시 키에 포함)
+    cached = get_cached_genre_analysis(ageGroup, startDt, endDt)
     if cached:
         return cached
 
@@ -176,7 +199,7 @@ def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt
             "graphImageUrl": image_url,
             "data": df_json
         }
-        save_genre_analysis(ageGroup, start_year, end_year, result_json)
+        save_genre_analysis(ageGroup, startDt, endDt, start_year, end_year, result_json)
         return result_json
 
     # (이하 기존대로 외부 API 호출 → results → df → 그래프 생성)
@@ -215,37 +238,36 @@ def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt
         '대출수': item.get('topBook', {}).get('loanCount') if isinstance(item.get('topBook'), dict) else item.get('대출수'),
     } for item in results])
 
+    # 연령대 범위와 라벨을 ageGroup에서 동적으로 할당
+    print(f"DEBUG: ageGroup={ageGroup}")
+    from_age, to_age = get_age_range(ageGroup)
+    age_label = get_age_label(ageGroup)
+    print(f"DEBUG: age_label={age_label}, from_age={from_age}, to_age={to_age}")
     # 멀티라인 그래프 스타일 적용
     plt.figure(figsize=(8, 6))
-
-    # 주제별 데이터 만들기
     pivot = df.pivot(index='연도', columns='주제분류', values='대출수').fillna(0)
     colors = ["#ff1919", "#ff9900", "#ffd700", "#1f77b4", "#2ca02c", "#9467bd"]
     label_color_map = {}
-    # 범례 라벨을 단순화: 항상 두 번째 장르만 보이게
     def simplify_label(label):
         parts = [x.strip() for x in label.split('>')]
         if len(parts) >= 2:
             return parts[1]
         return parts[-1]
     simplified_labels = {col: simplify_label(col) for col in pivot.columns}
-
     for idx, col in enumerate(pivot.columns):
         label_color_map[col] = colors[idx % len(colors)]
         plt.plot(pivot.index, pivot[col], label=simplified_labels[col], color=label_color_map[col], linewidth=2)
-
     plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), fontsize=14, frameon=False)
-    plt.title(f"{start_year}~{end_year}년도의{ageGroup}세\n독서 성향 분석 결과", fontsize=18, pad=30)
+    plt.title(f"{start_year}~{end_year}년도의 {age_label}({from_age}~{to_age}세) 독서 성향 분석 결과", fontsize=18, pad=30)
     plt.xlabel("")
     plt.ylabel("대출 수", fontsize=14, labelpad=15)
     plt.xticks(pivot.index, fontsize=12)
     plt.yticks(fontsize=12)
     plt.grid(axis='y', alpha=0.4)
-    plt.tight_layout(rect=[0, 0, 0.85, 1])  # 범례 공간 확보
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
     ax = plt.gca()
     ax.spines['left'].set_linewidth(2)
     ax.spines['bottom'].set_linewidth(2)
-    ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     plt.savefig(img_path, bbox_inches='tight')
     plt.close()
@@ -262,6 +284,6 @@ def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt
         "graphImageUrl": image_url,
         "data": df_json
     }
-    save_genre_analysis(ageGroup, start_year, end_year, result_json)
+    # 캐시 저장
+    save_genre_analysis(ageGroup, startDt, endDt, start_year, end_year, result_json)
     return result_json
-

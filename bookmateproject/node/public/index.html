@@ -14,6 +14,7 @@
         <button type="submit">조회</button>
       </form>
       <div id="result"></div>
+      <div id="graph"></div>
       <script>
       document.getElementById('searchForm').onsubmit = async function(e) {
         e.preventDefault();
@@ -23,7 +24,13 @@
         // 서버의 실제 IP와 FastAPI 포트(3000)로 요청
         const res = await fetch('http://192.168.1.21:3000/genre-change/?ageGroup=' + ageGroup + '&startDt=' + startDt + '&endDt=' + endDt);
         const data = await res.json();
-        document.getElementById('result').innerHTML = JSON.stringify(data);
+        document.getElementById('result').innerHTML = JSON.stringify(data, null, 2);
+        // 그래프 이미지가 있으면 표시
+        if (data.graphImageUrl) {
+          document.getElementById('graph').innerHTML = `<img src='http://192.168.1.21:3000${data.graphImageUrl}' alt='분석 그래프' style='max-width:100%;border:1px solid #ccc;margin-top:10px;'>`;
+        } else {
+          document.getElementById('graph').innerHTML = '';
+        }
       }
       </script>
     
