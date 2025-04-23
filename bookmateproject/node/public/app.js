@@ -24,12 +24,19 @@ document.addEventListener("DOMContentLoaded", function() {
       const range = ageGroupYearRanges[ageGroup];
       const startDt = range.start;
       const endDt = range.end;
-      const res = await fetch('http://192.168.1.21:3000/genre-change/?ageGroup=' + ageGroup + '&startDt=' + startDt + '&endDt=' + endDt);
+      // 서버 라우터로 GET 요청 (쿼리스트링)
+      const params = new URLSearchParams({ ageGroup, startDt, endDt });
+      const res = await fetch(`/genre-change?${params.toString()}`);
       const data = await res.json();
-  
+      console.log('data:', data);
+      console.log('labels:', data.labels);
+      console.log('datasets:', data.datasets);
+      console.log('Chart:', typeof Chart);
+      console.log('ChartDataLabels:', typeof ChartDataLabels);
+
       // 선택한 세대 라벨 동적 생성
       const ageLabel = ageGroupLabels[ageGroup] || "";
-  
+
       // Chart.js 차트 그리기 (막대 중앙정렬용 dummy dataset 적용)
       let chartDatasets = data.datasets;
       if (data.datasets.length === 1) {
@@ -47,8 +54,7 @@ document.addEventListener("DOMContentLoaded", function() {
           data.datasets[0]
         ];
       }
-  
-      if (data.labels && data.datasets) {
+      if (data.labels && chartDatasets) {
         const ctx = document.getElementById('genreChart').getContext('2d');
         if (genreChart) genreChart.destroy();
         genreChart = new Chart(ctx, {
@@ -130,22 +136,6 @@ document.addEventListener("DOMContentLoaded", function() {
       } else {
         document.getElementById('graph-container').style.display = 'none';
       }
-  
-      // 인기 도서 표 출력
-      if (data.topBooks && data.topBooks.length > 0) {
-        let html = '<table class="top-books-table"><thead><tr><th>년도</th><th>장르</th><th>인기 도서</th><th>대출수</th></tr></thead><tbody>';
-        data.topBooks.forEach(book => {
-          html += `<tr>
-            <td>${book.year}</td>
-            <td>${book.classNm}</td>
-            <td>${book.title}</td>
-            <td>${book.loanCount}</td>
-          </tr>`;
-        });
-        html += '</tbody></table>';
-        document.getElementById('top-books').innerHTML = html;
-      } else {
-        document.getElementById('top-books').innerHTML = '';
-      }
     }
-  });
+});
+

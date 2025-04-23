@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>분석 결과</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/result.css">
+    <script src="/static/flyingBook.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/loanChart.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <span class="view-count view-count-top"><i class="fas fa-eye"></i> 조회수: <%= viewCount %></span>
+        <div class="header">
+            <div class="header-icon"><i class="fas fa-cube"></i></div>
+            <div class="title-group">
+                <div class="main-title">분석 결과</div>
+                <div class="subtitle"><%= eventDate %>   분석 대시보드</div>
+            </div>
+        </div>
+        <div class="dashboard" style="flex-direction:column; gap:36px;">
+
+            <div class="card" style="flex:2; max-width:1100px; margin:0 auto;">
+                <div style="font-weight:600;font-size:1.15rem;margin-bottom:10px;"><i class="fas fa-book"></i> 대출 도서 TOP 5</div>
+                <div class="books-list books-list-top5">
+                    <% if (eachBookData.length > 0) { %>
+                        <div class="book-card book-card-top1" onclick="openModal('<%= eachBookData[0].isbn13 %>', '<%= eachBookData[0].bookName %>')">
+                            <span class="crown"><i class="fas fa-crown"></i></span>
+                            <img class="book-img" src="<%= eachBookData[0].bookImageURL %>" alt="도서 이미지">
+                            <div class="book-title"><%= eachBookData[0].bookName %></div>
+                            <div class="book-author"><i class="fas fa-user"></i> <%= eachBookData[0].author %></div>
+                            <div class="book-meta">ISBN: <%= eachBookData[0].isbn13 %></div>
+                            <div class="book-meta">분류: <%= eachBookData[0].className %></div>
+                            <div class="loan-count"><%= eachBookData[0].loanCount %>회</div>
+                        </div>
+                    <% } %>
+                    <div class="books-list-row">
+                        <% for (let i = 1; i < eachBookData.length; i++) { %>
+                            <div class="book-card book-card-rest" onclick="openModal('<%= eachBookData[i].isbn13 %>', '<%= eachBookData[i].bookName %>')">
+                                <img class="book-img" src="<%= eachBookData[i].bookImageURL %>" alt="도서 이미지">
+                                <div class="book-title"><%= eachBookData[i].bookName %></div>
+                                <div class="book-author"><i class="fas fa-user"></i> <%= eachBookData[i].author %></div>
+                                <div class="book-meta">ISBN: <%= eachBookData[i].isbn13 %></div>
+                                <div class="book-meta">분류: <%= eachBookData[i].className %></div>
+                                <div class="loan-count">     <%= eachBookData[i].loanCount %>회</div>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="max-width:1000px; margin:0 auto;">
+                <div style="font-weight:600;font-size:1.15rem;margin-bottom:10px;"><i class="fas fa-chart-area"></i> 대출 그래프</div>
+                <canvas id="loanChart" height="340" width="900"></canvas>
+            </div>
+        </div>
+        <div class="footer">
+            <button class="btn-primary" onclick="window.location.href='/'"><i class="fas fa-home"></i> 홈으로</button>
+        </div>
+        <div id="modal-overlay" class="modal-overlay" style="display:none;"></div>
+        <div id="modal" class="modal" style="display:none;">
+            <div class="modal-content" style="overflow-y: auto; max-height: 55vh;">
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+                <div id="modal-body">
+                    <!-- 도서관 정보 등 동적으로 표시될 영역 -->
+                    <p style="text-align:center; color:#a259ff; font-size:1.2rem;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <input id="userAddr" type="hidden" value="서울특별시 서초구 서초2동">
+    <script>
+    window.initKakao = function() {
+        kakao.maps.load(function() {
+            // 이제 geocoder 등 모든 객체 사용 가능
+            var geocoder = new kakao.maps.services.Geocoder();
+
+            // 현재 위치 가져오기 및 행정동 주소 찾기
+            navigator.geolocation.getCurrentPosition((position) => {
+                var userLat = position.coords.latitude;
+                var userLng = position.coords.longitude;
+                var coords = new kakao.maps.LatLng(userLat, userLng);
+                searchAddrFromCoords(coords, function(result, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        for (var i = 0; i < result.length; i++) {
+                            if (result[i].region_type === 'H') {
+                                document.getElementById('userAddr').value = result[i].address_name;
+                                break;
+                            }
+                        }
+                    }
+                });
+            }, function(error) {
+                alert('현재 사용자의 위치 정보를 가져올 수 없습니다: ' + error.message);
+            });
+
+            function searchAddrFromCoords(coords, callback) {
+                geocoder.coord2RegionCode(coords.getLng(), coords.getLat(), callback);
+            }
+        });
+    }
+    </script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=<%=kakao_apiKey%>&libraries=services&autoload=false" onload="initKakao()"></script>
+    <script>
+    function openModal(isbn13, bookName) {
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('modal').style.display = 'flex';
+
+        // region 값 가져오기
+        const region = '서울특별시 서초구 서초2동';
+              
+        // AJAX 요청
+        fetch('/checkBookState', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isbn13, region })
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log(data);
+            let modalHtml = '';
+            let libraries = data.docs.searchedLibraryData || [];
+            const userAddr = '서울특별시 서초구 서초2동';
+            // 상단 안내문구: 책이름, 위치, 도서관 수
+            if (libraries.length > 0) {
+                modalHtml += `<div style="text-align:center; font-size:1.13rem; font-weight:600; margin-bottom:16px; color:#222;">
+                    '<span style='color:#7a3dfc;'>${bookName}</span>'은(는)
+                    사용자가 현재 계신 <span style='color:#a259ff;font-weight:700;'>${userAddr}</span>의<br>
+                    총 <span style='color:#7a3dfc;'>${libraries.length-1}</span>개의 도서관에서 소장 중입니다.
+                </div>`;
+            }
+            for (let i = 0; i < libraries.length; i++) {
+                let library = libraries[i];
+                let libraryName = library.libName;
+                let libraryAddress = library.address;
+                let libraryPhone = library.tel;
+                let isLoanable = library.isLoanable;
+                // 도서관 정보 HTML 생성 (대출 가능 여부를 오른쪽에)
+                const loanableText = isLoanable ? '<span style="color:#2ecc40;font-weight:bold;float:right;">대출 가능</span>' : '<span style="color:#ff3b3b;font-weight:bold;float:right;">대출 불가</span>';
+                modalHtml += `
+                    <div class="library-info" style="margin-bottom:12px; padding:8px 0; border-bottom:1px dashed #eee; display:flex; align-items:center; justify-content:space-between;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:1.01rem;font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${libraryName}</div>
+                            <div style="font-size:0.93rem; color:#888; margin:2px 0 2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${libraryAddress}</div>
+                            <div style="font-size:0.91rem; color:#a259ff; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><i class="fas fa-phone"></i> ${libraryPhone ?? '-'}</div>
+                        </div>
+                        <div style="margin-left:16px; min-width:70px; text-align:right;">${loanableText}</div>
+                    </div>`;
+            }
+            if(libraries.length === 0) {
+                modalHtml = '<div style="text-align:center;color:#ff3b3b;font-size:1.1rem;">해당 지역에서 소장 도서관이 없습니다.</div>';
+            }
+            document.getElementById('modal-body').innerHTML = modalHtml;
+
+        })
+        .catch(err => {
+            alert('서버 통신 오류: ' + err);
+        });
+}
+        // 모달 닫기
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('modal').style.display = 'none';
+        }
+        // 모든 book-card에 클릭 이벤트 연결
+        window.onload = function() {
+           
+            document.getElementById('modal-overlay').onclick = closeModal;
+        }
+    </script>
+    <script>
+        // Chart.js 대출 그래프 - 서버에서 eachBookData만 전달하면 됩니다.
+        window.addEventListener('DOMContentLoaded', function() {
+            const eachBookData = <%- JSON.stringify(eachBookData) %>;
+            window.renderLoanChart(eachBookData);
+        });
+
+
+        
+    </script>
+</body>
+</html>

@@ -24,7 +24,7 @@
           <button class="signup-btn">Sign up</button>
         </div>
       </div>
-    <form id="searchForm">
+    <form id="searchForm" method="get">
         <label for="ageGroup">어떤 세대의 독서 성향을 확인할까요?</label>
         <select name="ageGroup" id="ageGroup">
             <option value="17">Z세대 후반 (17~21세)</option>
@@ -41,6 +41,7 @@
     <div id="top-books"></div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <script src="main.js"></script>
+    <script src="app.js"></script>
+    <input id="userAddr" type="hidden" value="서울특별시 서초구 서초2동"></input>
 </body>
 </html>
