@@ -10,7 +10,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 24px 48px 16px 48px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #353434;
   }
   .nav-left {
     display: flex;
@@ -67,12 +67,14 @@ body {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    padding: 48px 64px 0 64px;
     min-height: 70vh;
-    gap: 40px;
+    gap: 80px;
   }
+  
   .headline {
-    flex: 1.5;
+    padding-left: 300px;
+    padding-bottom: 60px;
+    margin-bottom: 150px;
   }
   .best-choice {
     color: #ff9900;
@@ -83,7 +85,7 @@ body {
     display: block;
   }
   .big-title {
-    font-size: 4rem;
+    font-size: 7rem;
     font-weight: bold;
     line-height: 1.05;
     letter-spacing: -4px;
@@ -125,6 +127,7 @@ body {
     font-size: 1rem;
     margin-top: 32px;
     max-width: 420px;
+    word-break: keep-all;
   }
   .desc a {
     color: #ff9900;
@@ -133,37 +136,73 @@ body {
   .books {
     display: flex;
     align-items: flex-end;
-    gap: 24px;
+    gap: 15px;
     flex: 1;
     margin-bottom: 32px;
+    perspective: 800px;
   }
   .book {
-    width: 60px;
-    height: 300px;
-    border-radius: 4px 4px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 15%;
     color: #fff;
     font-size: 1.1rem;
     font-weight: bold;
     writing-mode: vertical-rl;
-    text-align: center;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    box-shadow: 2px 6px 16px rgba(0,0,0,0.07);
+    box-shadow: 10px 8px 0px rgb(29, 29, 29);
     letter-spacing: 2px;
     position: relative;
+    margin-top: 50px;
+    font-size: 30px;
+    transition: transform 0.5s ease;
+    transform-origin: left bottom;
   }
-  .book.classic { background: #c00b0b; }
-  .book.modern { background: #1f355d; }
-  .book.nonfiction { background: #ffbe3b; color: #222;}
+  .book:hover {
+    transform: rotateZ(75deg);
+    transition-delay: 0s;
+    cursor: pointer;
+  }
+  .books:hover .book:nth-child(1) {
+    transition-delay: 0.1s;
+    transform-origin: left bottom;
+    transform: rotateZ(15deg);
+    z-index: 3;
+  }
+  .books:hover .book:nth-child(2) {
+    transition-delay: 0.2s;
+    transform-origin: 30% 100%;
+    transform: translateX(10px) rotateZ(15deg);
+    z-index: 2;
+  }
+  .books:hover .book:nth-child(3) {
+    transition-delay: 0.3s;
+    transform-origin: 30% 100%;
+    transform: translateX(15px) rotateZ(15deg);
+    z-index: 1;
+  }
+  .book.classic {
+    background: #c00b0b; 
+    height: 85%;
+  }
+  .book.modern {
+    background: #1f355d; 
+    height: 77%;
+  }
+  .book.nonfiction { 
+    background: #ffbe3b; color: #222;
+    height: 89%;
+  }
+  
   .book .plus {
     position: absolute;
-    top: 10px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 1.3rem;
     color: #fff;
-    background: #222;
+    background: #ffffff;
     border-radius: 50%;
     width: 24px;
     height: 24px;

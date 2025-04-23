@@ -87,7 +87,9 @@ document.addEventListener("DOMContentLoaded", function() {
                   return context.dataset.data[context.dataIndex] > 15;
                 },
                 font: { weight: 'bold' },
-                formatter: Math.round
+                formatter: function(value, context) {
+                  return Math.round(value) + '권';
+                }
               }
             },
             elements: {
@@ -133,9 +135,25 @@ document.addEventListener("DOMContentLoaded", function() {
           plugins: [ChartDataLabels]
         });
         document.getElementById('graph-container').style.display = 'block';
+
+        // 인기 도서 표 출력
+        if (data.topBooks && data.topBooks.length > 0) {
+          let html = '<table class="top-books-table"><thead><tr><th>년도</th><th>장르</th><th>인기 도서</th><th>대출수</th></tr></thead><tbody>';
+          data.topBooks.forEach(book => {
+            html += `<tr>
+              <td>${book.year}</td>
+              <td>${book.classNm}</td>
+              <td>${book.title}</td>
+              <td>${book.loanCount}</td>
+            </tr>`;
+          });
+          html += '</tbody></table>';
+          document.getElementById('top-books').innerHTML = html;
+        } else {
+          document.getElementById('top-books').innerHTML = '';
+        }
       } else {
         document.getElementById('graph-container').style.display = 'none';
       }
     }
 });
-
