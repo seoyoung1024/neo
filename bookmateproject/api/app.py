@@ -193,14 +193,12 @@ def genre_change_analysis(ageGroup: int = 17, startDt: str = '2024-01-01', endDt
     genres = sorted(df['주제분류'].unique())
     pivot = df.pivot(index='연도', columns='주제분류', values='대출수').reindex(index=years, columns=genres, fill_value=0)
     datasets = []
-    colors = ["#ff1919", "#ff9900", "#ffd700", "#1f77b4", "#2ca02c", "#9467bd"]
     for idx, genre in enumerate(genres):
         # NaN을 0으로 변환 후 int로 변환
         data_list = [int(x) if not pd.isna(x) else 0 for x in pivot[genre].tolist()]
         datasets.append({
             'label': genre,
             'data': data_list,
-            'backgroundColor': colors[idx % len(colors)]
         })
     chartjs_payload = {
         'labels': year_list,
