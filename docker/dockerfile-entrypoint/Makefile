@@ -1,11 +1,11 @@
+## Makefile
+
 build:
 	docker build -t ctop .
 run:
 	docker run -it ctop
 run2:
 	docker run -it ctop -d 2
-exec:
-	docker exec -it cmds /bin/bash
 ps:
 	docker ps -a
 img:
@@ -13,4 +13,4 @@ img:
 rm:
 	docker rm -f $$(docker ps -aq)
 rmi:
-	docker rmi -f $$(docker images -q) 
+	docker rmi -f $$(docker images -q)

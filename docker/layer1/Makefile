@@ -2,7 +2,6 @@ build:
 	docker build -t ubuntu .
 run:
 	docker run -it -d --name ubuntu ubuntu
-
 history:
 	docker history ubuntu
 exec:
@@ -14,4 +13,4 @@ img:
 rm:
 	docker rm -f $$(docker ps -aq)
 rmi:
-	docker rmi -f $$(docker images -q) 
+	docker rmi -f $$(docker images -q)

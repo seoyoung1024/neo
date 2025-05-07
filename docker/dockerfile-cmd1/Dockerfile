@@ -1,7 +1,9 @@
+## Dockerfile
+
 # Base Images
 FROM ubuntu:latest
 
-# nginx install 
+# nignx install
 RUN apt -y update && apt -y upgrade
 RUN apt -y install nginx
 RUN echo "\ndaemon off;" >> /etc/nginx/nginx.conf
@@ -11,9 +13,9 @@ VOLUME ["/data", "/etc/nginx-site-enabled", "/var/log/nginx"]
 
 WORKDIR /etc/nginx
 
-#Port
+# Port
 EXPOSE 80
 EXPOSE 443
 
-#Server Exection
+# Server Exection
 CMD ["nginx"]
