@@ -1,18 +1,18 @@
 build:
-    docker build -t node_signal_test_app .
+	docker build -t node_signal_test_app .
 run:
-    docker run -it -p 8000:8000 --name node_signal node_signal_test_app 
+	docker run -it -p 8000:8000 --name node_signal node_signal_test_app 
 history:
-    docker history node_signal_test_app
+	docker history node_signal_test_app
 stop:
-    docker stop  node_signal
+	docker stop  node_signal
 kill:
-    docker kill --signal="SIGTERM" node_signal
+	docker kill --signal="SIGTERM" node_signal
 ps:
-    docker ps -a
+	docker ps -a
 img:
-    docker images
+	docker images
 rm:
-    docker rm -f $$(docker ps -aq)
+	docker rm -f $$(docker ps -aq)
 rmi:
-    docker rmi -f $$(docker images -q)
+	docker rmi -f $$(docker images -q)
