@@ -39,6 +39,10 @@ oracle/node/dbConfig.js
 oracle/**/node_modules
 oracle/**/package-lock.json
 
+## docker
+docker/mysql/mysql*
+docker/mongodb/mongo*
+
 ## bookmateproject
 bookmateproject/node/**/node_modules
 bookmateproject/node/**/package-lock.json
