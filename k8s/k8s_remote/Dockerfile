@@ -8,13 +8,12 @@ RUN apt -y update; apt -y upgrade; apt -y install vim git net-tools
 WORKDIR /root
 
 # Step 4 : Config file copy
-COPY .bashrc .
-COPY .exrc .
-COPY hello.js .
+COPY remoteapi.tar.gz .
 
 # Step 5 : Install express
-RUN npm init -y
-RUN npm install express
+RUN tar xvzf remoteapi.tar.gz
+WORKDIR '/root/remoteapi'
+RUN npm install
 RUN npm install -g nodemon
 
 # Step 6 : Open port
