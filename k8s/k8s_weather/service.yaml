@@ -16,4 +16,4 @@ spec:
     app: weathers
   type: LoadBalancer
   externalIPs:
-    - 13.213.77.9 
+    - 13.213.77.9
