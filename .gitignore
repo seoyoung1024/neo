@@ -46,3 +46,6 @@ docker/mongodb/mongo*
 ## bookmateproject
 bookmateproject/node/**/node_modules
 bookmateproject/node/**/package-lock.json
+
+## nestjs
+nestjs
