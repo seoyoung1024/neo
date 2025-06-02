@@ -19,4 +19,3 @@ col1, col2, col3 = st.columns(3)
 col1.metric(label = '달러(USD)', value="1,383원", delta='-12.00원')
 col2.metric(label = '일본JPY(100엔)', value="958.63원", delta='-7.44원')
 col3.metric(label = '유럽연합EUR', value="1,3335.82원", delta='11.44원')
-
