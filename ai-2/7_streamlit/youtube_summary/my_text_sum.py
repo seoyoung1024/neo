@@ -1,42 +1,68 @@
-## my_yt_tran.py
+## my_text_sum.py
 
-import yt_dlp
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api.formatters import TextFormatter
+import openai 
+import os
+import deepl
+import tiktoken
 
-def get_youtube_video_info(video_url):
-    ydl_opts = {
-        'cookies' :'./data/cookies.txt',
-        'noplaylist': True,
-        'quiet': True,
-        'no_warnings': True
-    }
+def summarize_text(user_text, lang='en'):
+    if lang == 'en':
+        messages = [
+            {"role": "user", "content": "You are a helpul assistant in the summary."},
+            {"role": "user", "content": f'Summarize the following text: \n{user_text}'},
+        ]
+    elif lang == 'ko':
+        messages = [
+            {"role": "user", "content": "You are a helpul assistant in the summary."},
+            {"role": "user", "content": f'다음의 내용을 한국어로 요약해 주세요.: \n{user_text}'},
+        ]
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        video_info = ydl.extract_info(video_url, download=False)
-        return {
-            'id' : video_info.get('id'),
-            'title' : video_info.get('title'),
-            'upload_date': video_info.get('upload_date'),
-            'channel' : video_info.get('channel'),
-            'duration' : video_info.get('duration_string'),
-        }
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        max_tokens=500,
+        temperature=0.3,
+        n = 1
+    )
 
-def get_video_id(video_url):
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True
-    }
+    summary = response.choices[0].message["content"]
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        video_info = ydl.extract_info(video_url, download=False)
-        return video_info.get('id')
+    return summary
 
-def get_transcript_from_youtube(video_url, lang='en'):
-    video_id = get_video_id(video_url)
-    transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-    transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=[lang])
+def summariz_text_final(text_list, lang='en'):
+    joined_summary = ' '.join(text_list)
 
-    text_formatter = TextFormatter()
-    text_formatted = text_formatter.format_transcript(transcript)
-    return text_formatted
+    enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    token_num = len(enc.encode(joined_summary))
+
+    req_max_token = 2000
+    final_summary = ''
+
+    if token_num < req_max_token:
+        final_summary = summarize_text(joined_summary, lang)
+
+    return token_num, final_summary
+
+def translate_english_to_korean_using_openAI(text):
+    user_content = f"Translate the following English sentence into Korean.\n {text}"
+    message = [ 
+        {"role": "user", "content": user_content}
+        ]
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=message,
+        max_tokens=2000,
+        temperature=0.3,
+        n = 1
+        )
+
+    assistant_reply = response.choices[0].message["content"]
+
+    return assistant_reply
+
+def translate_english_to_korean_using_deepl(text):
+    translator = deepl.Translator(os.getenv('DEEPL_API_KEY'))
+    result = translator.translate_text(text, target_lang='KO')
+
+    return result.text
