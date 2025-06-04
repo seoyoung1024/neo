@@ -33,6 +33,13 @@ secret.json
 **/*.mp4
 **/*.mp3
 
+**/model.safetensors
+**/llama.cpp
+**/*.gguf
+**/traning_data
+**/sft.json
+**/finefuned-*
+
 ## mongodb
 mongodb/backup
 
